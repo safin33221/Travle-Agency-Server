@@ -24,6 +24,7 @@ export class AuthService {
     const staff = await this.prisma.staffUser.findUnique({
       where: { email: loginDto.email.toLowerCase().trim() },
     });
+    console.log(loginDto.email, loginDto.password)
 
     if (!staff) {
       throw new UnauthorizedException('Invalid email or password');

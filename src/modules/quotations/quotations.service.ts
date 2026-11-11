@@ -36,7 +36,7 @@ export class QuotationsService {
 
       return {
         packageId: item.packageId || null,
-        title: item.title.trim(),
+        title: (item.title || item.label || 'Tour Package Item').trim(),
         description: item.description?.trim() || null,
         quantity: item.quantity,
         unitPrice: unit.toNumber(),

@@ -18,13 +18,14 @@ export class FollowUpsService {
     }
 
     const assignedToId = dto.assignedToId || actorId;
+    const title = (dto.title || dto.note || 'Follow-up reminder').trim();
 
     const task = await this.prisma.followUpTask.create({
       data: {
         leadId,
         assignedToId,
-        title: dto.title.trim(),
-        note: dto.note?.trim(),
+        title,
+        note: (dto.note || dto.title || '').trim() || null,
         dueAt: new Date(dto.dueAt),
         status: FollowUpStatus.OPEN,
       },

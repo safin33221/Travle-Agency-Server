@@ -20,6 +20,7 @@ import { PackageQueryDto } from './dto/package-query.dto.js';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard.js';
 import { RolesGuard } from '../../common/guards/roles.guard.js';
 import { Roles } from '../../common/decorators/roles.decorator.js';
+import { Public } from '../../common/decorators/public.decorator.js';
 import { CurrentUser } from '../../common/decorators/current-user.decorator.js';
 import { StaffRole } from '../../generated/prisma/client.js';
 
@@ -30,6 +31,7 @@ import { StaffRole } from '../../generated/prisma/client.js';
 export class PackagesController {
   constructor(private readonly packagesService: PackagesService) {}
 
+  @Public()
   @Get()
   @ApiOperation({ summary: 'List tour packages with search and filtering' })
   @ApiResponse({ status: 200, description: 'Paginated tour package catalog' })
@@ -37,6 +39,7 @@ export class PackagesController {
     return this.packagesService.findAll(query);
   }
 
+  @Public()
   @Get(':id')
   @ApiOperation({ summary: 'Get tour package details by ID' })
   @ApiResponse({ status: 200, description: 'Tour package details' })

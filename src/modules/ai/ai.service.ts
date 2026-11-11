@@ -17,12 +17,24 @@ export class AiService {
   }
 
   async generateDraft(dto: GenerateAiDraftDto, authorStaffId: string) {
-    const lead = await this.prisma.lead.findUnique({
-      where: { id: dto.leadId },
-    });
+    let lead: any = null;
+    if (dto.leadId) {
+      lead = await this.prisma.lead.findUnique({
+        where: { id: dto.leadId },
+      });
 
-    if (!lead) {
-      throw new NotFoundException(`Lead with ID ${dto.leadId} not found`);
+      if (!lead) {
+        throw new NotFoundException(`Lead with ID ${dto.leadId} not found`);
+      }
+    } else {
+      lead = {
+        customerName: 'Valued Traveler',
+        destination: null,
+        travelStartDate: null,
+        travelerCount: null,
+        budget: null,
+        requirements: dto.customerInquiry || dto.inquiryText || '',
+      };
     }
 
     // Grounding: Load only active (non-archived) packages
@@ -36,7 +48,12 @@ export class AiService {
       take: 5,
     });
 
-    const inquiry = (dto.inquiryText || lead.requirements || '').trim();
+    const inquiry = (
+      dto.inquiryText ||
+      dto.customerInquiry ||
+      lead.requirements ||
+      ''
+    ).trim();
     const missingInfo: string[] = [];
 
     if (!lead.travelStartDate) missingInfo.push('Travel dates');
@@ -61,31 +78,49 @@ export class AiService {
       suggestedText = this.fallbackTemplate(lead, activePackages, dto.language, missingInfo);
     }
 
-    // Persist draft for human review
-    const aiDraft = await this.prisma.aiDraft.create({
-      data: {
+    // Persist draft for human review if linked to a lead
+    if (lead.id) {
+      const aiDraft = await this.prisma.aiDraft.create({
+        data: {
+          leadId: lead.id,
+          authorStaffId,
+          type: dto.type,
+          language: dto.language,
+          promptSummary: `Draft for lead ${lead.customerName}`,
+          suggestedText,
+          missingInformation: missingInfo,
+          sourcePackageIds,
+          modelProvider: this.openai ? 'openai' : 'template-fallback',
+          modelName: model,
+          reviewStatus: AiDraftReviewStatus.DRAFT,
+        },
+      });
+
+      return {
+        id: aiDraft.id,
+        draftId: aiDraft.id,
         leadId: lead.id,
-        authorStaffId,
-        type: dto.type,
-        language: dto.language,
-        promptSummary: `Draft for lead ${lead.customerName}`,
-        suggestedText,
-        missingInformation: missingInfo,
-        sourcePackageIds,
-        modelProvider: this.openai ? 'openai' : 'template-fallback',
-        modelName: model,
-        reviewStatus: AiDraftReviewStatus.DRAFT,
-      },
-    });
+        type: aiDraft.type,
+        language: aiDraft.language,
+        suggestedText: aiDraft.suggestedText,
+        missingInformation: aiDraft.missingInformation,
+        sourcePackageIds: aiDraft.sourcePackageIds,
+        modelUsed: model,
+        needsHumanReview: true,
+        status: 'DRAFT',
+      };
+    }
 
     return {
-      draftId: aiDraft.id,
-      leadId: lead.id,
-      type: aiDraft.type,
-      language: aiDraft.language,
-      suggestedText: aiDraft.suggestedText,
-      missingInformation: aiDraft.missingInformation,
-      sourcePackageIds: aiDraft.sourcePackageIds,
+      id: 'standalone-draft',
+      draftId: 'standalone-draft',
+      leadId: null,
+      type: dto.type,
+      language: dto.language,
+      suggestedText,
+      missingInformation: missingInfo,
+      sourcePackageIds,
+      modelUsed: model,
       needsHumanReview: true,
       status: 'DRAFT',
     };

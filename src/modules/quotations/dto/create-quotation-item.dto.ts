@@ -1,4 +1,4 @@
-import { IsInt, IsNotEmpty, IsNumber, IsOptional, IsString, IsUUID, Min } from 'class-validator';
+import { IsInt, IsNumber, IsOptional, IsString, IsUUID, Min } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class CreateQuotationItemDto {
@@ -7,10 +7,15 @@ export class CreateQuotationItemDto {
   @IsOptional()
   packageId?: string;
 
-  @ApiProperty({ example: '3-Day Luxury Beach Tour Package' })
+  @ApiPropertyOptional({ example: '3-Day Luxury Beach Tour Package' })
   @IsString()
-  @IsNotEmpty()
-  title!: string;
+  @IsOptional()
+  title?: string;
+
+  @ApiPropertyOptional({ example: '3-Day Luxury Beach Tour Package' })
+  @IsString()
+  @IsOptional()
+  label?: string;
 
   @ApiPropertyOptional({ example: 'Includes deluxe ocean view cottage and daily meals.' })
   @IsString()

@@ -34,6 +34,17 @@ export class CreateQuotationDto {
   @IsOptional()
   termsAndConditions?: string;
 
+  @ApiPropertyOptional({ description: 'Alias for termsAndConditions' })
+  @IsString()
+  @IsOptional()
+  terms?: string;
+
+  @ApiPropertyOptional({ description: 'Optional tax rate override' })
+  @IsNumber()
+  @Min(0)
+  @IsOptional()
+  taxRate?: number;
+
   @ApiPropertyOptional({ example: 'Special corporate package offer.' })
   @IsString()
   @IsOptional()

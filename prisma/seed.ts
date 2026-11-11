@@ -61,6 +61,74 @@ async function seed() {
       console.log(`OWNER_ADMIN ${defaultAdminEmail} already present.`);
     }
 
+    // 3. Ensure Sample Verified Tour Packages for Local Development
+    const pkgCount = await prisma.package.count();
+    if (pkgCount === 0) {
+      await prisma.package.createMany({
+        data: [
+          {
+            title: "Cox's Bazar 3D/2N Beach Resort Escape",
+            destination: "Cox's Bazar",
+            durationDays: 3,
+            durationNights: 2,
+            description:
+              "Enjoy a relaxing 3-day, 2-night seaside holiday in Cox's Bazar with beachfront accommodation, Inani & Himchari sightseeing, and Marine Drive tour.",
+            inclusions: [
+              '2 Nights AC Deluxe Hotel Stay',
+              'Daily Buffet Breakfast',
+              'Dhaka – Cox’s Bazar – Dhaka AC Bus',
+              'Marine Drive & Inani sightseeing',
+            ],
+            exclusions: [
+              'Personal shopping & tips',
+              'Lunch & Dinner',
+              'Parasailing or water sports fees',
+            ],
+            basePrice: 8500,
+            currency: 'BDT',
+            isArchived: false,
+          },
+          {
+            title: 'Sylhet & Sreemangal 3D/2N Tea Valley Retreat',
+            destination: 'Sylhet',
+            durationDays: 3,
+            durationNights: 2,
+            description:
+              'Explore Ratargul Swamp Forest, Bichnakandi, Jaflong, and the lush tea estates of Sreemangal with guided transport.',
+            inclusions: [
+              '2 Nights Resort Accommodation',
+              'Daily Breakfast',
+              'Local Reserve Chander Gari / Microbus',
+              'Ratargul Boat Ride',
+            ],
+            exclusions: ['Lunch & Dinner', 'Personal expenses'],
+            basePrice: 7800,
+            currency: 'BDT',
+            isArchived: false,
+          },
+          {
+            title: 'Sundarbans 3D/2N Luxury Cruise Expedition',
+            destination: 'Sundarbans',
+            durationDays: 3,
+            durationNights: 2,
+            description:
+              'Experience the world’s largest mangrove forest aboard an AC tourist vessel visiting Kotka, Jamtola Beach, Harbaria, and Karamjal.',
+            inclusions: [
+              '3 Days / 2 Nights Tourist Ship Cabin',
+              'All Meals & Snacks Onboard',
+              'Forest Department Permit & Armed Guard',
+              'Guided Canal Cruising',
+            ],
+            exclusions: ['Dhaka – Khulna transport', 'Camera entry fees'],
+            basePrice: 14500,
+            currency: 'BDT',
+            isArchived: false,
+          },
+        ],
+      });
+      console.log('Seeded 3 verified tour packages.');
+    }
+
     console.log('Seeding complete.');
   } catch (error) {
     console.error('Seeding error:', error);

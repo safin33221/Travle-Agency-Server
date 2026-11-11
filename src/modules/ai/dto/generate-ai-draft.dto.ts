@@ -1,12 +1,12 @@
-import { IsEnum, IsNotEmpty, IsOptional, IsString, IsUUID } from 'class-validator';
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { IsArray, IsEnum, IsOptional, IsString, IsUUID } from 'class-validator';
+import { ApiPropertyOptional } from '@nestjs/swagger';
 import { AiDraftType } from '../../../generated/prisma/client.js';
 
 export class GenerateAiDraftDto {
-  @ApiProperty({ description: 'ID of the lead to generate draft response for' })
+  @ApiPropertyOptional({ description: 'Optional ID of the lead to generate draft response for' })
   @IsUUID()
-  @IsNotEmpty()
-  leadId!: string;
+  @IsOptional()
+  leadId?: string;
 
   @ApiPropertyOptional({
     example: 'Ami Cox\'s Bazar 3 diner ekta package chai 2 joner jonno.',
@@ -15,6 +15,20 @@ export class GenerateAiDraftDto {
   @IsString()
   @IsOptional()
   inquiryText?: string;
+
+  @ApiPropertyOptional({
+    example: 'Ami Cox\'s Bazar 3 diner ekta package chai 2 joner jonno.',
+    description: 'Alias for inquiryText',
+  })
+  @IsString()
+  @IsOptional()
+  customerInquiry?: string;
+
+  @ApiPropertyOptional({ type: [String] })
+  @IsArray()
+  @IsString({ each: true })
+  @IsOptional()
+  packageIds?: string[];
 
   @ApiPropertyOptional({ enum: AiDraftType, default: AiDraftType.CUSTOMER_REPLY })
   @IsEnum(AiDraftType)

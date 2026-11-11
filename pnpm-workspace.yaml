@@ -1,12 +1,8 @@
+verifyDepsBeforeRun: false
+
 allowBuilds:
   '@prisma/engines': true
   '@scarf/scarf': true
   bcrypt: true
   prisma: false
 
-overrides:
-  magic-string: ^0.30.17
-  ora: ^5.4.1
-
-patchedDependencies:
-  zeptomatch@1.2.2: patches/zeptomatch@1.2.2.patch

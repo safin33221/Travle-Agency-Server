@@ -26,10 +26,11 @@ export class CreatePackageDto {
   @Min(1)
   durationDays!: number;
 
-  @ApiProperty({ example: 2, description: 'Duration in nights' })
+  @ApiPropertyOptional({ example: 2, description: 'Duration in nights (defaults to durationDays - 1)' })
   @IsInt()
   @Min(0)
-  durationNights!: number;
+  @IsOptional()
+  durationNights?: number;
 
   @ApiProperty({ example: 'Experience 3 days of beachside relaxation with 5-star resort accommodation.' })
   @IsString()
@@ -71,5 +72,10 @@ export class CreatePackageDto {
   @IsDateString()
   @IsOptional()
   validUntil?: string;
+
+  @ApiPropertyOptional({ example: 'Special seasonal conditions apply' })
+  @IsString()
+  @IsOptional()
+  notes?: string;
 }
 

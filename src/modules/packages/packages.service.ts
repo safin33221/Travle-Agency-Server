@@ -9,12 +9,16 @@ export class PackagesService {
   constructor(private readonly prisma: PrismaService) {}
 
   async create(createPackageDto: CreatePackageDto, actorId: string) {
+    const durationNights =
+      createPackageDto.durationNights ??
+      Math.max(0, createPackageDto.durationDays - 1);
+
     const pkg = await this.prisma.package.create({
       data: {
         title: createPackageDto.title.trim(),
         destination: createPackageDto.destination.trim(),
         durationDays: createPackageDto.durationDays,
-        durationNights: createPackageDto.durationNights,
+        durationNights,
         description: createPackageDto.description.trim(),
         inclusions: createPackageDto.inclusions,
         exclusions: createPackageDto.exclusions,

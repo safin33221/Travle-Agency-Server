@@ -2,10 +2,10 @@ import { IsDateString, IsNotEmpty, IsOptional, IsString, IsUUID } from 'class-va
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class CreateFollowUpDto {
-  @ApiProperty({ example: 'Call client regarding hotel choice' })
+  @ApiPropertyOptional({ example: 'Call client regarding hotel choice' })
   @IsString()
-  @IsNotEmpty()
-  title!: string;
+  @IsOptional()
+  title?: string;
 
   @ApiPropertyOptional({ example: 'Follow up on the hotel budget quotation sent yesterday.' })
   @IsString()
