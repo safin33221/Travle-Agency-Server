@@ -11,6 +11,10 @@ import {
   buildPrismaQuery,
   createPaginatedResponse,
 } from '../../common/utils/query-builder.util.js';
+import {
+  DEFAULT_SECTOR_DOCUMENTS,
+  type SectorCategoryKey,
+} from '../../common/utils/sector-templates.util.js';
 
 @Injectable()
 export class PackagesService {
@@ -21,8 +25,16 @@ export class PackagesService {
       createPackageDto.durationNights ??
       Math.max(0, createPackageDto.durationDays - 1);
 
+    const category = (createPackageDto.category ?? 'TOUR') as SectorCategoryKey;
+    const requiredDocuments =
+      createPackageDto.requiredDocuments &&
+      createPackageDto.requiredDocuments.length > 0
+        ? createPackageDto.requiredDocuments
+        : DEFAULT_SECTOR_DOCUMENTS[category] ?? DEFAULT_SECTOR_DOCUMENTS.TOUR;
+
     const pkg = await this.prisma.package.create({
       data: {
+        category: createPackageDto.category ?? 'TOUR',
         title: createPackageDto.title.trim(),
         destination: createPackageDto.destination.trim(),
         durationDays: createPackageDto.durationDays,
@@ -30,6 +42,8 @@ export class PackagesService {
         description: createPackageDto.description.trim(),
         inclusions: createPackageDto.inclusions,
         exclusions: createPackageDto.exclusions,
+        requiredDocuments,
+        structuredSpecs: (createPackageDto.structuredSpecs ?? undefined) as any,
         basePrice: createPackageDto.basePrice,
         currency: createPackageDto.currency?.toUpperCase().trim() || 'BDT',
         validFrom: createPackageDto.validFrom
@@ -63,6 +77,7 @@ export class PackagesService {
     const { where, skip, take, orderBy, page, limit } = buildPrismaQuery({
       query,
       searchableFields: PACKAGE_SEARCHABLE_FIELDS,
+      exactFilterFields: ['category'],
       partialFilterFields: ['destination'],
       numericRanges: [
         {
@@ -108,6 +123,7 @@ export class PackagesService {
     const current = await this.findOne(id);
 
     const data: Record<string, unknown> = {};
+    if (updatePackageDto.category !== undefined) data['category'] = updatePackageDto.category;
     if (updatePackageDto.title !== undefined) data['title'] = updatePackageDto.title.trim();
     if (updatePackageDto.destination !== undefined) data['destination'] = updatePackageDto.destination.trim();
     if (updatePackageDto.durationDays !== undefined) data['durationDays'] = updatePackageDto.durationDays;
@@ -115,6 +131,8 @@ export class PackagesService {
     if (updatePackageDto.description !== undefined) data['description'] = updatePackageDto.description.trim();
     if (updatePackageDto.inclusions !== undefined) data['inclusions'] = updatePackageDto.inclusions;
     if (updatePackageDto.exclusions !== undefined) data['exclusions'] = updatePackageDto.exclusions;
+    if (updatePackageDto.requiredDocuments !== undefined) data['requiredDocuments'] = updatePackageDto.requiredDocuments;
+    if (updatePackageDto.structuredSpecs !== undefined) data['structuredSpecs'] = updatePackageDto.structuredSpecs;
     if (updatePackageDto.basePrice !== undefined) data['basePrice'] = updatePackageDto.basePrice;
     if (updatePackageDto.currency !== undefined) data['currency'] = updatePackageDto.currency.toUpperCase().trim();
     if (updatePackageDto.validFrom !== undefined) {

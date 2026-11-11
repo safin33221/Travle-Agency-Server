@@ -37,10 +37,11 @@ export class AiService {
       };
     }
 
-    // Grounding: Load only active (non-archived) packages
+    // Grounding: Load only active (non-archived) packages matching category/destination
     const activePackages = await this.prisma.package.findMany({
       where: {
         isArchived: false,
+        ...(lead.category ? { category: lead.category } : {}),
         ...(lead.destination
           ? { destination: { contains: lead.destination, mode: 'insensitive' } }
           : {}),
@@ -56,10 +57,24 @@ export class AiService {
     ).trim();
     const missingInfo: string[] = [];
 
-    if (!lead.travelStartDate) missingInfo.push('Travel dates');
-    if (!lead.travelerCount) missingInfo.push('Number of travelers');
+    if (!lead.destination) missingInfo.push('Preferred country / destination');
     if (!lead.budget) missingInfo.push('Approximate budget');
-    if (!lead.destination) missingInfo.push('Preferred destination');
+
+    // Check unsubmitted documents from Lead's documentChecklist
+    const checklistItems = Array.isArray(lead.documentChecklist)
+      ? (lead.documentChecklist as Array<{ title?: string; status?: string }>)
+      : [];
+    const pendingDocs = checklistItems
+      .filter((d) => d.status === 'PENDING' || d.status === 'REJECTED')
+      .map((d) => d.title)
+      .filter((t): t is string => Boolean(t));
+
+    if (pendingDocs.length > 0) {
+      missingInfo.push(`Pending documents: ${pendingDocs.slice(0, 4).join(', ')}`);
+    } else if (lead.category === 'TOUR' || !lead.category) {
+      if (!lead.travelStartDate) missingInfo.push('Travel dates');
+      if (!lead.travelerCount) missingInfo.push('Number of travelers');
+    }
 
     let suggestedText = '';
     const sourcePackageIds = activePackages.map((p) => p.id);
@@ -198,7 +213,10 @@ Task: Generate a helpful, professional ${type} response draft in ${language}.`;
       }
 
       if (missingInfo.length > 0) {
-        text += `\nআপনার জন্য নিখুঁত পরিকল্পনা তৈরি করতে অনুগ্রহ করে আমাদের জানান: ${missingInfo.join(', ')}।\n`;
+        text += `\nপরবর্তী ধাপে এগিয়ে যেতে অনুগ্রহ করে নিচের তথ্য/কাগজপত্রগুলো প্রস্তুত রাখুন:\n• ${missingInfo.join('\n• ')}\n`;
+      }
+      if (lead.trackingCode) {
+        text += `\nআপনার ফাইল ট্র্যাকিং কোড: ${lead.trackingCode} (আমাদের ওয়েবসাইটের Track Status পেজে গিয়ে যেকোনো সময় আপডেট দেখতে পারবেন)।\n`;
       }
       text += `\nধন্যবাদ,\nTravelPilot টিম (AI ড্রাফ্ট - রিভিউ সাপেক্ষ)`;
       return text;
@@ -207,16 +225,19 @@ Task: Generate a helpful, professional ${type} response draft in ${language}.`;
     // Default English / Banglish fallback
     let text = `Dear ${customer},\n\nThank you for reaching out to us. `;
     if (packages.length > 0) {
-      text += `We have the following verified travel package(s) available:\n`;
+      text += `We have the following verified package/program option(s) available:\n`;
       for (const p of packages.slice(0, 2)) {
-        text += `• ${p.title}: ${p.durationDays} Days / ${p.durationNights} Nights, Base Price starting from ${p.basePrice} ${p.currency}.\n`;
+        text += `• [${p.category || 'TOUR'}] ${p.title} (${p.destination}) — Base Price: ${p.basePrice} ${p.currency}.\n`;
       }
     } else {
-      text += `We would be delighted to customize a personalized itinerary for your trip.\n`;
+      text += `We would be delighted to assist with your ${lead.category || 'travel'} processing.\n`;
     }
 
     if (missingInfo.length > 0) {
-      text += `\nTo finalize your quotation, could you please confirm: ${missingInfo.join(', ')}?\n`;
+      text += `\nTo proceed with the next milestone, please provide/confirm:\n• ${missingInfo.join('\n• ')}\n`;
+    }
+    if (lead.trackingCode) {
+      text += `\nYour File Tracking ID: ${lead.trackingCode} (You can check your live file & visa progress anytime on our Track Status page).\n`;
     }
 
     text += `\nWarm regards,\nTravelPilot Operations Team (AI Draft — Requires Staff Review)`;

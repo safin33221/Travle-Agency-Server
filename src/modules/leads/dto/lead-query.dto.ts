@@ -9,10 +9,15 @@ import {
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { LeadSource, LeadStage } from '../../../generated/prisma/client.js';
+import {
+  LeadSource,
+  LeadStage,
+  ServiceCategory,
+} from '../../../generated/prisma/client.js';
 import { PaginationQueryDto } from '../../../common/dto/pagination-query.dto.js';
 
 export const LEAD_SEARCHABLE_FIELDS = [
+  'trackingCode',
   'customerName',
   'customerPhone',
   'customerEmail',
@@ -29,9 +34,24 @@ export const LEAD_ALLOWED_SORT_FIELDS = [
   'travelStartDate',
   'travelerCount',
   'stage',
+  'category',
+  'eligibilityStatus',
 ];
 
 export class LeadQueryDto extends PaginationQueryDto {
+  @ApiPropertyOptional({
+    enum: ServiceCategory,
+    description: 'Filter by service sector (TOUR, HAJJ_UMRAH, WORK_PERMIT, STUDENT_VISA)',
+  })
+  @IsEnum(ServiceCategory)
+  @IsOptional()
+  category?: ServiceCategory;
+
+  @ApiPropertyOptional({ description: 'Filter by eligibility status (HIGH_MATCH, CONDITIONAL_MATCH, LOW_MATCH)' })
+  @IsString()
+  @IsOptional()
+  eligibilityStatus?: string;
+
   @ApiPropertyOptional({ enum: LeadStage, description: 'Filter by pipeline stage' })
   @IsEnum(LeadStage)
   @IsOptional()

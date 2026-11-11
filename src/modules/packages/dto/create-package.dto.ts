@@ -1,16 +1,24 @@
 import {
   IsArray,
   IsDateString,
+  IsEnum,
   IsInt,
   IsNotEmpty,
   IsNumber,
+  IsObject,
   IsOptional,
   IsString,
   Min,
 } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { ServiceCategory } from '../../../generated/prisma/client.js';
 
 export class CreatePackageDto {
+  @ApiPropertyOptional({ enum: ServiceCategory, default: ServiceCategory.TOUR })
+  @IsEnum(ServiceCategory)
+  @IsOptional()
+  category: ServiceCategory = ServiceCategory.TOUR;
+
   @ApiProperty({ example: 'Cox\'s Bazar Luxury Beach Getaway' })
   @IsString()
   @IsNotEmpty()
@@ -77,5 +85,21 @@ export class CreatePackageDto {
   @IsString()
   @IsOptional()
   notes?: string;
+
+  @ApiPropertyOptional({
+    description: 'Required document checklist for this package/visa service',
+    type: [String],
+  })
+  @IsArray()
+  @IsString({ each: true })
+  @IsOptional()
+  requiredDocuments?: string[];
+
+  @ApiPropertyOptional({
+    description: 'Sector-specific structured metadata (Hajj distance, Work salary, Student GPA/IELTS)',
+  })
+  @IsObject()
+  @IsOptional()
+  structuredSpecs?: Record<string, unknown>;
 }
 

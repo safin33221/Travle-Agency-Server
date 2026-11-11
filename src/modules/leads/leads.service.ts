@@ -13,16 +13,38 @@ import {
   buildPrismaQuery,
   createPaginatedResponse,
 } from '../../common/utils/query-builder.util.js';
+import {
+  buildDefaultDocumentChecklist,
+  buildDefaultMilestoneChecklist,
+  evaluateLeadEligibility,
+  generateTrackingCode,
+  type SectorCategoryKey,
+} from '../../common/utils/sector-templates.util.js';
 
 @Injectable()
 export class LeadsService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async create(createLeadDto: CreateLeadDto, actorId: string) {
-    const assignedToId = createLeadDto.assignedToId || actorId;
+  async create(createLeadDto: CreateLeadDto, actorId?: string) {
+    const assignedToId = createLeadDto.assignedToId || actorId || null;
+    const category = (createLeadDto.category ?? 'TOUR') as SectorCategoryKey;
+    const trackingCode = generateTrackingCode(category);
+    const eligibility = evaluateLeadEligibility(
+      category,
+      createLeadDto.metadata,
+      createLeadDto.budget,
+    );
+    const documentChecklist =
+      createLeadDto.documentChecklist &&
+      createLeadDto.documentChecklist.length > 0
+        ? createLeadDto.documentChecklist
+        : buildDefaultDocumentChecklist(category);
+    const milestoneChecklist = buildDefaultMilestoneChecklist(category);
 
     const lead = await this.prisma.lead.create({
       data: {
+        trackingCode,
+        category: createLeadDto.category ?? 'TOUR',
         customerName: createLeadDto.customerName.trim(),
         customerPhone: createLeadDto.customerPhone?.trim(),
         customerEmail: createLeadDto.customerEmail?.toLowerCase().trim(),
@@ -38,6 +60,14 @@ export class LeadsService {
         budget: createLeadDto.budget,
         requirements: createLeadDto.requirements?.trim(),
         stage: createLeadDto.stage,
+        eligibilityStatus: eligibility.status,
+        documentChecklist: documentChecklist as any,
+        milestoneChecklist: milestoneChecklist as any,
+        metadata: (createLeadDto.metadata ?? {
+          eligibilitySummary: eligibility.summary,
+          eligibilityReasons: eligibility.reasons,
+          eligibilityScore: eligibility.score,
+        }) as any,
         assignedToId,
       },
       include: {
@@ -49,14 +79,17 @@ export class LeadsService {
 
     await this.prisma.auditLog.create({
       data: {
-        actorId,
+        actorId: actorId ?? null,
         action: 'LEAD_CREATED',
         entityType: 'Lead',
         entityId: lead.id,
         metadata: {
+          trackingCode: lead.trackingCode,
+          category: lead.category,
           customerName: lead.customerName,
           source: lead.source,
           stage: lead.stage,
+          eligibilityStatus: lead.eligibilityStatus,
           assignedToId: lead.assignedToId,
         },
       },
@@ -65,11 +98,74 @@ export class LeadsService {
     return lead;
   }
 
+  async createPublicInquiry(createLeadDto: CreateLeadDto) {
+    const category = (createLeadDto.category ?? 'TOUR') as SectorCategoryKey;
+    const eligibility = evaluateLeadEligibility(
+      category,
+      createLeadDto.metadata,
+      createLeadDto.budget,
+    );
+
+    createLeadDto.source = createLeadDto.source ?? 'WEBSITE';
+    createLeadDto.metadata = {
+      ...createLeadDto.metadata,
+      eligibilitySummary: eligibility.summary,
+      eligibilityReasons: eligibility.reasons,
+      eligibilityScore: eligibility.score,
+    };
+
+    const lead = await this.create(createLeadDto);
+
+    return {
+      trackingCode: lead.trackingCode,
+      category: lead.category,
+      customerName: lead.customerName,
+      destination: lead.destination,
+      stage: lead.stage,
+      eligibility,
+      milestoneChecklist: lead.milestoneChecklist,
+      documentChecklist: lead.documentChecklist,
+      createdAt: lead.createdAt,
+    };
+  }
+
+  async trackPublicStatus(trackingCode: string) {
+    const normalizedCode = trackingCode.trim().toUpperCase();
+    const lead = await this.prisma.lead.findFirst({
+      where: { trackingCode: normalizedCode },
+    });
+
+    if (!lead) {
+      throw new NotFoundException(
+        `No application or file found with tracking code ${normalizedCode}`,
+      );
+    }
+
+    return {
+      trackingCode: lead.trackingCode,
+      category: lead.category,
+      customerName: lead.customerName,
+      destination: lead.destination,
+      stage: lead.stage,
+      eligibilityStatus: lead.eligibilityStatus,
+      milestoneChecklist: lead.milestoneChecklist ?? [],
+      documentChecklist: lead.documentChecklist ?? [],
+      updatedAt: lead.updatedAt,
+      createdAt: lead.createdAt,
+    };
+  }
+
   async findAll(query: LeadQueryDto, _user: AuthenticatedUser) {
     const { where, skip, take, orderBy, page, limit } = buildPrismaQuery({
       query,
       searchableFields: LEAD_SEARCHABLE_FIELDS,
-      exactFilterFields: ['stage', 'source', 'assignedToId'],
+      exactFilterFields: [
+        'category',
+        'eligibilityStatus',
+        'stage',
+        'source',
+        'assignedToId',
+      ],
       partialFilterFields: ['destination'],
       numericRanges: [
         {
@@ -166,6 +262,7 @@ export class LeadsService {
     const current = await this.findOne(id);
 
     const data: Record<string, unknown> = {};
+    if (updateLeadDto.category !== undefined) data['category'] = updateLeadDto.category;
     if (updateLeadDto.customerName !== undefined) data['customerName'] = updateLeadDto.customerName.trim();
     if (updateLeadDto.customerPhone !== undefined) data['customerPhone'] = updateLeadDto.customerPhone?.trim();
     if (updateLeadDto.customerEmail !== undefined) data['customerEmail'] = updateLeadDto.customerEmail?.toLowerCase().trim();
@@ -182,6 +279,10 @@ export class LeadsService {
     if (updateLeadDto.requirements !== undefined) data['requirements'] = updateLeadDto.requirements?.trim();
     if (updateLeadDto.stage !== undefined) data['stage'] = updateLeadDto.stage;
     if (updateLeadDto.assignedToId !== undefined) data['assignedToId'] = updateLeadDto.assignedToId;
+    if (updateLeadDto.eligibilityStatus !== undefined) data['eligibilityStatus'] = updateLeadDto.eligibilityStatus;
+    if (updateLeadDto.documentChecklist !== undefined) data['documentChecklist'] = updateLeadDto.documentChecklist;
+    if (updateLeadDto.milestoneChecklist !== undefined) data['milestoneChecklist'] = updateLeadDto.milestoneChecklist;
+    if (updateLeadDto.metadata !== undefined) data['metadata'] = updateLeadDto.metadata;
 
     const updated = await this.prisma.lead.update({
       where: { id },

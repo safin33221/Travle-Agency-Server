@@ -2,15 +2,22 @@ import {
   IsArray,
   IsBoolean,
   IsDateString,
+  IsEnum,
   IsInt,
   IsNumber,
+  IsObject,
   IsOptional,
   IsString,
   Min,
 } from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
+import { ServiceCategory } from '../../../generated/prisma/client.js';
 
 export class UpdatePackageDto {
+  @ApiPropertyOptional({ enum: ServiceCategory })
+  @IsEnum(ServiceCategory)
+  @IsOptional()
+  category?: ServiceCategory;
   @ApiPropertyOptional({ example: 'Cox\'s Bazar Luxury Beach Getaway Updated' })
   @IsString()
   @IsOptional()
@@ -75,5 +82,16 @@ export class UpdatePackageDto {
   @IsBoolean()
   @IsOptional()
   isArchived?: boolean;
+
+  @ApiPropertyOptional({ type: [String] })
+  @IsArray()
+  @IsString({ each: true })
+  @IsOptional()
+  requiredDocuments?: string[];
+
+  @ApiPropertyOptional()
+  @IsObject()
+  @IsOptional()
+  structuredSpecs?: Record<string, unknown>;
 }
 

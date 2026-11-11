@@ -1,19 +1,30 @@
 import {
+  IsArray,
   IsDateString,
   IsEmail,
   IsEnum,
   IsInt,
   IsNotEmpty,
   IsNumber,
+  IsObject,
   IsOptional,
   IsString,
   IsUUID,
   Min,
 } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { LeadSource, LeadStage } from '../../../generated/prisma/client.js';
+import {
+  LeadSource,
+  LeadStage,
+  ServiceCategory,
+} from '../../../generated/prisma/client.js';
 
 export class CreateLeadDto {
+  @ApiPropertyOptional({ enum: ServiceCategory, default: ServiceCategory.TOUR })
+  @IsEnum(ServiceCategory)
+  @IsOptional()
+  category: ServiceCategory = ServiceCategory.TOUR;
+
   @ApiProperty({ example: 'Tanvir Hasan' })
   @IsString()
   @IsNotEmpty()
@@ -75,5 +86,19 @@ export class CreateLeadDto {
   @IsUUID()
   @IsOptional()
   assignedToId?: string;
+
+  @ApiPropertyOptional({
+    description: 'Sector-specific assessment metadata (GPA, IELTS, studyGapYears, age, jobSkill, passportValidityMonths)',
+  })
+  @IsObject()
+  @IsOptional()
+  metadata?: Record<string, unknown>;
+
+  @ApiPropertyOptional({
+    description: 'Optional initial document checklist items',
+  })
+  @IsArray()
+  @IsOptional()
+  documentChecklist?: unknown[];
 }
 

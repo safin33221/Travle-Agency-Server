@@ -17,6 +17,7 @@ import { LeadQueryDto } from './dto/lead-query.dto.js';
 import { CreateLeadNoteDto } from './dto/create-lead-note.dto.js';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard.js';
 import { RolesGuard } from '../../common/guards/roles.guard.js';
+import { Public } from '../../common/decorators/public.decorator.js';
 import { CurrentUser } from '../../common/decorators/current-user.decorator.js';
 import type { AuthenticatedUser } from '../../common/decorators/current-user.decorator.js';
 
@@ -26,6 +27,31 @@ import type { AuthenticatedUser } from '../../common/decorators/current-user.dec
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class LeadsController {
   constructor(private readonly leadsService: LeadsService) {}
+
+  @Public()
+  @Post('public-inquiry')
+  @ApiOperation({
+    summary:
+      'Public inquiry & smart eligibility assessment for Tour, Hajj/Umrah, Work Permit, or Student Visa',
+  })
+  @ApiResponse({
+    status: 201,
+    description: 'Public inquiry recorded with tracking code and eligibility evaluation',
+  })
+  async createPublicInquiry(@Body() createLeadDto: CreateLeadDto) {
+    return this.leadsService.createPublicInquiry(createLeadDto);
+  }
+
+  @Public()
+  @Get('track/:trackingCode')
+  @ApiOperation({
+    summary: 'Public file / visa status tracker by tracking code (no login required)',
+  })
+  @ApiResponse({ status: 200, description: 'Sanitized milestone and document status' })
+  @ApiResponse({ status: 404, description: 'Tracking code not found' })
+  async trackPublicStatus(@Param('trackingCode') trackingCode: string) {
+    return this.leadsService.trackPublicStatus(trackingCode);
+  }
 
   @Post()
   @ApiOperation({ summary: 'Create a new CRM lead inquiry' })

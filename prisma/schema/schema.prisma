@@ -17,6 +17,13 @@ enum StaffStatus {
   INACTIVE
 }
 
+enum ServiceCategory {
+  TOUR
+  HAJJ_UMRAH
+  WORK_PERMIT
+  STUDENT_VISA
+}
+
 enum LeadStage {
   NEW
   QUALIFIED
@@ -105,52 +112,62 @@ model AgencySettings {
 }
 
 model Package {
-  id             String    @id @default(uuid())
-  title          String
-  destination    String
-  durationDays   Int
-  durationNights Int
-  description    String    @db.Text
-  inclusions     String[]
-  exclusions     String[]
-  basePrice      Decimal   @db.Decimal(12, 2)
-  currency       String    @default("BDT")
-  validFrom      DateTime?
-  validUntil     DateTime?
-  isArchived     Boolean   @default(false)
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
+  id                String          @id @default(uuid())
+  category          ServiceCategory @default(TOUR)
+  title             String
+  destination       String
+  durationDays      Int
+  durationNights    Int
+  description       String          @db.Text
+  inclusions        String[]
+  exclusions        String[]
+  requiredDocuments String[]        @default([])
+  structuredSpecs   Json?
+  basePrice         Decimal         @db.Decimal(12, 2)
+  currency          String          @default("BDT")
+  validFrom         DateTime?
+  validUntil        DateTime?
+  isArchived        Boolean         @default(false)
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
 
   quotationItems QuotationItem[]
 
-  @@index([destination, isArchived])
+  @@index([category, destination, isArchived])
   @@map("packages")
 }
 
 model Lead {
-  id              String      @id @default(uuid())
-  customerName    String
-  customerPhone   String?
-  customerEmail   String?
-  source          LeadSource  @default(PHONE)
-  destination     String?
-  travelStartDate DateTime?
-  travelEndDate   DateTime?
-  travelerCount   Int?
-  budget          Decimal?    @db.Decimal(12, 2)
-  requirements    String?     @db.Text
-  stage           LeadStage   @default(NEW)
-  assignedToId    String?
-  assignedTo      StaffUser?  @relation("AssignedLeads", fields: [assignedToId], references: [id], onDelete: SetNull)
-  createdAt       DateTime    @default(now())
-  updatedAt       DateTime    @updatedAt
+  id                 String          @id @default(uuid())
+  trackingCode       String?
+  category           ServiceCategory @default(TOUR)
+  customerName       String
+  customerPhone      String?
+  customerEmail      String?
+  source             LeadSource      @default(PHONE)
+  destination        String?
+  travelStartDate    DateTime?
+  travelEndDate      DateTime?
+  travelerCount      Int?
+  budget             Decimal?        @db.Decimal(12, 2)
+  requirements       String?         @db.Text
+  stage              LeadStage       @default(NEW)
+  eligibilityStatus  String?
+  documentChecklist  Json?
+  milestoneChecklist Json?
+  metadata           Json?
+  assignedToId       String?
+  assignedTo         StaffUser?      @relation("AssignedLeads", fields: [assignedToId], references: [id], onDelete: SetNull)
+  createdAt          DateTime        @default(now())
+  updatedAt          DateTime        @updatedAt
 
   notes         LeadNote[]
   followUpTasks FollowUpTask[]
   quotations    Quotation[]
   aiDrafts      AiDraft[]
 
-  @@index([stage, assignedToId])
+  @@index([trackingCode])
+  @@index([category, stage, assignedToId])
   @@index([createdAt])
   @@map("leads")
 }

@@ -1,7 +1,8 @@
-import { IsBoolean, IsNumber, IsOptional, IsString, Min } from 'class-validator';
+import { IsBoolean, IsEnum, IsNumber, IsOptional, IsString, Min } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { PaginationQueryDto } from '../../../common/dto/pagination-query.dto.js';
+import { ServiceCategory } from '../../../generated/prisma/client.js';
 
 export const PACKAGE_SEARCHABLE_FIELDS = [
   'title',
@@ -16,9 +17,14 @@ export const PACKAGE_ALLOWED_SORT_FIELDS = [
   'destination',
   'basePrice',
   'durationDays',
+  'category',
 ];
 
 export class PackageQueryDto extends PaginationQueryDto {
+  @ApiPropertyOptional({ enum: ServiceCategory, description: 'Filter by service sector (TOUR, HAJJ_UMRAH, WORK_PERMIT, STUDENT_VISA)' })
+  @IsEnum(ServiceCategory)
+  @IsOptional()
+  category?: ServiceCategory;
   @ApiPropertyOptional({ description: 'Filter by destination (case-insensitive partial match)' })
   @IsString()
   @IsOptional()
