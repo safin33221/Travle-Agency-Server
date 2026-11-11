@@ -1,0 +1,214 @@
+diff --git a/dist/cjs/index.js b/dist/cjs/index.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..a80df4b608e86fb6312fcd968a78a48458b4bbfc
+--- /dev/null
++++ b/dist/cjs/index.js	
+@@ -0,0 +1,169 @@
++import { and, lazy, match, optional, or, parse, star } from "grammex";
++// node_modules/.pnpm_patches/zeptomatch@1.2.2/dist/range.js
++var ALPHABET = "abcdefghijklmnopqrstuvwxyz";
++var int2alpha = (int) => {
++	let alpha = "";
++	while (int > 0) {
++		alpha = ALPHABET[(int - 1) % 26] + alpha;
++		int = Math.floor((int - 1) / 26);
++	}
++	return alpha;
++};
++var alpha2int = (str) => {
++	let int = 0;
++	for (let i = 0, l = str.length; i < l; i++) int = int * 26 + ALPHABET.indexOf(str[i]) + 1;
++	return int;
++};
++var makeRangeInt = (start, end) => {
++	if (end < start) return makeRangeInt(end, start);
++	const range = [];
++	while (start <= end) range.push(start++);
++	return range;
++};
++var makeRangePaddedInt = (start, end, paddingLength) => {
++	return makeRangeInt(start, end).map((int) => String(int).padStart(paddingLength, "0"));
++};
++var makeRangeAlpha = (start, end) => {
++	return makeRangeInt(alpha2int(start), alpha2int(end)).map(int2alpha);
++};
++// node_modules/.pnpm_patches/zeptomatch@1.2.2/dist/utils.js
++var identity = (value) => {
++	return value;
++};
++var makeParser = (grammar) => {
++	return memoize((input) => {
++		return parse(input, grammar, { memoization: false }).join("");
++	});
++};
++var memoize = (fn) => {
++	const cache = {};
++	return (arg) => {
++		return cache[arg] ?? (cache[arg] = fn(arg));
++	};
++};
++// node_modules/.pnpm_patches/zeptomatch@1.2.2/dist/convert/grammar.js
++var FastPathAll = match(/^\*\*\/\*$/, ".*");
++var FastPathSimple = match(/^\*\*\/(\*)?([ a-zA-Z0-9._-]+)$/, (_, $1, $2) => `.*${$1 ? "" : "(?:^|/)"}${$2.replaceAll(".", "\\.")}`);
++var FastPathSimples = match(/^\*\*\/(\*)?([ a-zA-Z0-9._-]*)\{([ a-zA-Z0-9._-]+(?:,[ a-zA-Z0-9._-]+)*)\}$/, (_, $1, $2, $3) => `.*${$1 ? "" : "(?:^|/)"}${$2.replaceAll(".", "\\.")}(?:${$3.replaceAll(",", "|").replaceAll(".", "\\.")})`);
++var Escaped$1 = match(/\\./, identity);
++var Escape = match(/[$.*+?^(){}[\]\|]/, (char) => `\\${char}`);
++var Passthrough$1 = match(/./, identity);
++var NegationOdd = match(/^(?:!!)*!(.*)$/, (_, glob) => `(?!^${parser$1(glob)}$).*?`);
++var NegationEven = match(/^(!!)+/, "");
++var Negation = or([NegationOdd, NegationEven]);
++var StarStarBetween = match(/\/(\*\*\/)+/, "(?:/.+/|/)");
++var StarStarStart = match(/^(\*\*\/)+/, "(?:^|.*/)");
++var StarStarEnd = match(/\/(\*\*)$/, "(?:/.*|$)");
++var StarStarNone = match(/\*\*/, ".*");
++var StarStar = or([
++	StarStarBetween,
++	StarStarStart,
++	StarStarEnd,
++	StarStarNone
++]);
++var StarDouble = match(/\*\/(?!\*\*\/)/, "[^/]*/");
++var StarSingle = match(/\*/, "[^/]*");
++var Star = or([StarDouble, StarSingle]);
++var Question = match("?", "[^/]");
++var ClassOpen = match("[", identity);
++var ClassClose = match("]", identity);
++var ClassNegation = match(/[!^]/, "^/");
++var ClassRange = match(/[a-z]-[a-z]|[0-9]-[0-9]/i, identity);
++var ClassEscape = match(/[$.*+?^(){}[\|]/, (char) => `\\${char}`);
++var ClassPassthrough = match(/[^\]]/, identity);
++var ClassValue = or([
++	Escaped$1,
++	ClassEscape,
++	ClassRange,
++	ClassPassthrough
++]);
++var Class = and([
++	ClassOpen,
++	optional(ClassNegation),
++	star(ClassValue),
++	ClassClose
++]);
++var RangeOpen = match("{", "(?:");
++var RangeClose = match("}", ")");
++var RangeNumeric = match(/(\d+)\.\.(\d+)/, (_, $1, $2) => makeRangePaddedInt(+$1, +$2, Math.min($1.length, $2.length)).join("|"));
++var RangeAlphaLower = match(/([a-z]+)\.\.([a-z]+)/, (_, $1, $2) => makeRangeAlpha($1, $2).join("|"));
++var RangeAlphaUpper = match(/([A-Z]+)\.\.([A-Z]+)/, (_, $1, $2) => makeRangeAlpha($1.toLowerCase(), $2.toLowerCase()).join("|").toUpperCase());
++var RangeValue = or([
++	RangeNumeric,
++	RangeAlphaLower,
++	RangeAlphaUpper
++]);
++var Range = and([
++	RangeOpen,
++	RangeValue,
++	RangeClose
++]);
++var BracesOpen = match("{", "(?:");
++var BracesClose = match("}", ")");
++var BracesComma = match(",", "|");
++var BracesEscape = match(/[$.*+?^(){[\]\|]/, (char) => `\\${char}`);
++var BracesPassthrough = match(/[^}]/, identity);
++var BracesNested = lazy(() => Braces);
++var BracesValue = or([
++	StarStar,
++	Star,
++	Question,
++	Class,
++	Range,
++	BracesNested,
++	Escaped$1,
++	BracesEscape,
++	BracesComma,
++	BracesPassthrough
++]);
++var Braces = and([
++	BracesOpen,
++	star(BracesValue),
++	BracesClose
++]);
++// node_modules/.pnpm_patches/zeptomatch@1.2.2/dist/convert/parser.js
++var parser$1 = makeParser(star(or([
++	FastPathAll,
++	FastPathSimple,
++	FastPathSimples,
++	Negation,
++	StarStar,
++	Star,
++	Question,
++	Class,
++	Range,
++	Braces,
++	Escaped$1,
++	Escape,
++	Passthrough$1
++])));
++// node_modules/.pnpm_patches/zeptomatch@1.2.2/dist/normalize/grammar.js
++var Escaped = match(/\\./, identity);
++var Passthrough = match(/./, identity);
++var StarStarStar = match(/\*\*\*+/, "*");
++var StarStarNoLeft = match(/([^/{[(!])\*\*/, (_, $1) => `${$1}*`);
++var StarStarNoRight = match(/(^|.)\*\*(?=[^*/)\]}])/, (_, $1) => `${$1}*`);
++// node_modules/.pnpm_patches/zeptomatch@1.2.2/dist/normalize/parser.js
++var parser = makeParser(star(or([
++	Escaped,
++	StarStarStar,
++	StarStarNoLeft,
++	StarStarNoRight,
++	Passthrough
++])));
++// node_modules/.pnpm_patches/zeptomatch@1.2.2/dist/index.js
++var zeptomatch = (glob, path) => {
++	const globs = Array.isArray(glob) ? glob : [glob];
++	if (!globs.length) return false;
++	const res = globs.map(zeptomatch.compile);
++	const isTrailing = globs.every((glob) => /(\/(?:\*\*)?|\[\/\])$/.test(glob));
++	const normpath = path.replace(/[\\\/]+/g, "/").replace(/\/$/, isTrailing ? "/" : "");
++	return res.some((re) => re.test(normpath));
++};
++zeptomatch.compile = (glob) => {
++	return new RegExp(`^${parser$1(parser(glob))}$`, "s");
++};
++zeptomatch.escape = (glob) => {
++	return glob.replace(/(\\.)|([$.*+?!^(){}[\]\|])|(.)/gs, (_, $1, $2, $3) => $1 || $3 || `\\${$2}`);
++};
++export { zeptomatch as default };
+diff --git a/dist/index.cjs b/dist/index.cjs
+new file mode 100644
+index 0000000000000000000000000000000000000000..4673ac9976645ce7d32cd6469d662e513eb087ad
+--- /dev/null
++++ b/dist/index.cjs	
+@@ -0,0 +1,14 @@
++const picomatch = require('picomatch');
++
++function zeptomatch(glob, path) {
++  const globs = Array.isArray(glob) ? glob : [glob];
++  if (!globs.length) return false;
++  return picomatch.isMatch(path, globs);
++}
++
++zeptomatch.compile = (glob) => picomatch.makeRe(glob);
++zeptomatch.escape = (str) => str.replace(/([$()*+?!^}{[\]|])/g, '\\$1');
++zeptomatch.default = zeptomatch;
++
++module.exports = zeptomatch;
++module.exports.default = zeptomatch;
+diff --git a/package.json b/package.json
+index e4ace00b8a02844b1e13c10c9717c718950e20ff..c7be05a1b8c440d9c069eebe1efd27a3b14964fe 100644
+--- a/package.json
++++ b/package.json	
+@@ -4,8 +4,12 @@
+   "description": "An absurdly small glob matcher that packs a punch.",
+   "version": "1.2.2",
+   "type": "module",
+-  "main": "dist/index.js",
+-  "exports": "./dist/index.js",
++  "main": "dist/index.cjs",
++  "exports": {
++    "require": "./dist/index.cjs",
++    "import": "./dist/index.js",
++    "default": "./dist/index.js"
++  },
+   "types": "./dist/index.d.ts",
+   "scripts": {
+     "clean": "tsex clean",
