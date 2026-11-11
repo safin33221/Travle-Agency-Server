@@ -1,32 +1,42 @@
-import { IsBoolean, IsInt, IsOptional, IsString, Max, Min } from 'class-validator';
+import { IsBoolean, IsNumber, IsOptional, IsString, Min } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ApiPropertyOptional } from '@nestjs/swagger';
+import { PaginationQueryDto } from '../../../common/dto/pagination-query.dto.js';
 
-export class PackageQueryDto {
-  @ApiPropertyOptional({ default: 1 })
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  @IsOptional()
-  page: number = 1;
+export const PACKAGE_SEARCHABLE_FIELDS = [
+  'title',
+  'destination',
+  'description',
+];
 
-  @ApiPropertyOptional({ default: 20 })
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  @Max(100)
-  @IsOptional()
-  limit: number = 20;
+export const PACKAGE_ALLOWED_SORT_FIELDS = [
+  'createdAt',
+  'updatedAt',
+  'title',
+  'destination',
+  'basePrice',
+  'durationDays',
+];
 
-  @ApiPropertyOptional({ description: 'Filter by search term in title or destination' })
-  @IsString()
-  @IsOptional()
-  search?: string;
-
-  @ApiPropertyOptional({ description: 'Filter by destination' })
+export class PackageQueryDto extends PaginationQueryDto {
+  @ApiPropertyOptional({ description: 'Filter by destination (case-insensitive partial match)' })
   @IsString()
   @IsOptional()
   destination?: string;
+
+  @ApiPropertyOptional({ description: 'Minimum base price filter' })
+  @Type(() => Number)
+  @IsNumber()
+  @Min(0)
+  @IsOptional()
+  minPrice?: number;
+
+  @ApiPropertyOptional({ description: 'Maximum base price filter' })
+  @Type(() => Number)
+  @IsNumber()
+  @Min(0)
+  @IsOptional()
+  maxPrice?: number;
 
   @ApiPropertyOptional({
     description: 'Filter by archived status. Defaults to false (active packages only)',
@@ -37,4 +47,3 @@ export class PackageQueryDto {
   @IsOptional()
   isArchived: boolean = false;
 }
-

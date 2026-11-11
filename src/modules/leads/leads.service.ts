@@ -2,9 +2,17 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service.js';
 import { CreateLeadDto } from './dto/create-lead.dto.js';
 import { UpdateLeadDto } from './dto/update-lead.dto.js';
-import { LeadQueryDto } from './dto/lead-query.dto.js';
+import {
+  LEAD_ALLOWED_SORT_FIELDS,
+  LEAD_SEARCHABLE_FIELDS,
+  LeadQueryDto,
+} from './dto/lead-query.dto.js';
 import { CreateLeadNoteDto } from './dto/create-lead-note.dto.js';
 import { AuthenticatedUser } from '../../common/decorators/current-user.decorator.js';
+import {
+  buildPrismaQuery,
+  createPaginatedResponse,
+} from '../../common/utils/query-builder.util.js';
 
 @Injectable()
 export class LeadsService {
@@ -58,31 +66,42 @@ export class LeadsService {
   }
 
   async findAll(query: LeadQueryDto, _user: AuthenticatedUser) {
-    const { page, limit, stage, source, assignedToId, search } = query;
-    const skip = (page - 1) * limit;
-
-    const where: Record<string, unknown> = {};
-
-    if (stage) where['stage'] = stage;
-    if (source) where['source'] = source;
-    if (assignedToId) where['assignedToId'] = assignedToId;
-
-    if (search) {
-      where['OR'] = [
-        { customerName: { contains: search.trim(), mode: 'insensitive' } },
-        { customerPhone: { contains: search.trim(), mode: 'insensitive' } },
-        { customerEmail: { contains: search.trim(), mode: 'insensitive' } },
-        { destination: { contains: search.trim(), mode: 'insensitive' } },
-      ];
-    }
+    const { where, skip, take, orderBy, page, limit } = buildPrismaQuery({
+      query,
+      searchableFields: LEAD_SEARCHABLE_FIELDS,
+      exactFilterFields: ['stage', 'source', 'assignedToId'],
+      partialFilterFields: ['destination'],
+      numericRanges: [
+        {
+          field: 'budget',
+          min: query.minBudget,
+          max: query.maxBudget,
+        },
+      ],
+      dateRanges: [
+        {
+          field: 'travelStartDate',
+          from: query.travelFrom,
+          to: query.travelTo,
+        },
+        {
+          field: 'createdAt',
+          from: query.createdFrom,
+          to: query.createdTo,
+        },
+      ],
+      allowedSortFields: LEAD_ALLOWED_SORT_FIELDS,
+      defaultSortBy: 'createdAt',
+      defaultSortOrder: 'desc',
+    });
 
     const [total, data] = await Promise.all([
       this.prisma.lead.count({ where }),
       this.prisma.lead.findMany({
         where,
         skip,
-        take: limit,
-        orderBy: { createdAt: 'desc' },
+        take,
+        orderBy,
         include: {
           assignedTo: {
             select: { id: true, name: true, email: true },
@@ -98,15 +117,7 @@ export class LeadsService {
       }),
     ]);
 
-    return {
-      data,
-      meta: {
-        total,
-        page,
-        limit,
-        totalPages: Math.ceil(total / limit),
-      },
-    };
+    return createPaginatedResponse(data, total, page, limit);
   }
 
   async findOne(id: string) {

@@ -1,22 +1,9 @@
-import { IsInt, IsOptional, IsString, IsUUID, Max, Min } from 'class-validator';
-import { Type } from 'class-transformer';
+import { IsOptional, IsString, IsUUID } from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
+import { PaginationQueryDto } from '../../../common/dto/pagination-query.dto.js';
 
-export class AuditQueryDto {
-  @ApiPropertyOptional({ default: 1 })
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  @IsOptional()
-  page: number = 1;
-
-  @ApiPropertyOptional({ default: 50 })
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  @Max(100)
-  @IsOptional()
-  limit: number = 50;
+export class AuditQueryDto extends PaginationQueryDto {
+  override limit: number = 50;
 
   @ApiPropertyOptional({ example: 'Quotation' })
   @IsString()
@@ -33,4 +20,5 @@ export class AuditQueryDto {
   @IsOptional()
   actorId?: string;
 }
+
 

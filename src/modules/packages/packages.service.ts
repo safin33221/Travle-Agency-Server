@@ -2,7 +2,15 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service.js';
 import { CreatePackageDto } from './dto/create-package.dto.js';
 import { UpdatePackageDto } from './dto/update-package.dto.js';
-import { PackageQueryDto } from './dto/package-query.dto.js';
+import {
+  PACKAGE_ALLOWED_SORT_FIELDS,
+  PACKAGE_SEARCHABLE_FIELDS,
+  PackageQueryDto,
+} from './dto/package-query.dto.js';
+import {
+  buildPrismaQuery,
+  createPaginatedResponse,
+} from '../../common/utils/query-builder.util.js';
 
 @Injectable()
 export class PackagesService {
@@ -52,47 +60,36 @@ export class PackagesService {
   }
 
   async findAll(query: PackageQueryDto) {
-    const { page, limit, search, destination, isArchived } = query;
-    const skip = (page - 1) * limit;
-
-    const where: Record<string, unknown> = {
-      isArchived,
-    };
-
-    if (destination) {
-      where['destination'] = {
-        contains: destination.trim(),
-        mode: 'insensitive',
-      };
-    }
-
-    if (search) {
-      where['OR'] = [
-        { title: { contains: search.trim(), mode: 'insensitive' } },
-        { destination: { contains: search.trim(), mode: 'insensitive' } },
-        { description: { contains: search.trim(), mode: 'insensitive' } },
-      ];
-    }
+    const { where, skip, take, orderBy, page, limit } = buildPrismaQuery({
+      query,
+      searchableFields: PACKAGE_SEARCHABLE_FIELDS,
+      partialFilterFields: ['destination'],
+      numericRanges: [
+        {
+          field: 'basePrice',
+          min: query.minPrice,
+          max: query.maxPrice,
+        },
+      ],
+      allowedSortFields: PACKAGE_ALLOWED_SORT_FIELDS,
+      defaultSortBy: 'createdAt',
+      defaultSortOrder: 'desc',
+      baseWhere: {
+        isArchived: query.isArchived,
+      },
+    });
 
     const [total, data] = await Promise.all([
       this.prisma.package.count({ where }),
       this.prisma.package.findMany({
         where,
         skip,
-        take: limit,
-        orderBy: { createdAt: 'desc' },
+        take,
+        orderBy,
       }),
     ]);
 
-    return {
-      data,
-      meta: {
-        total,
-        page,
-        limit,
-        totalPages: Math.ceil(total / limit),
-      },
-    };
+    return createPaginatedResponse(data, total, page, limit);
   }
 
   async findOne(id: string) {

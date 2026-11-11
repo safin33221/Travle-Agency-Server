@@ -8,8 +8,16 @@ import bcrypt from 'bcrypt';
 import { PrismaService } from '../../database/prisma.service.js';
 import { CreateStaffDto } from './dto/create-staff.dto.js';
 import { UpdateStaffDto } from './dto/update-staff.dto.js';
-import { StaffQueryDto } from './dto/staff-query.dto.js';
+import {
+  STAFF_ALLOWED_SORT_FIELDS,
+  STAFF_SEARCHABLE_FIELDS,
+  StaffQueryDto,
+} from './dto/staff-query.dto.js';
 import { StaffRole, StaffStatus } from '../../generated/prisma/client.js';
+import {
+  buildPrismaQuery,
+  createPaginatedResponse,
+} from '../../common/utils/query-builder.util.js';
 
 @Injectable()
 export class UsersService {
@@ -63,20 +71,22 @@ export class UsersService {
   }
 
   async findAll(query: StaffQueryDto) {
-    const { page, limit, role, status } = query;
-    const skip = (page - 1) * limit;
-
-    const where: Record<string, unknown> = {};
-    if (role) where['role'] = role;
-    if (status) where['status'] = status;
+    const { where, skip, take, orderBy, page, limit } = buildPrismaQuery({
+      query,
+      searchableFields: STAFF_SEARCHABLE_FIELDS,
+      exactFilterFields: ['role', 'status'],
+      allowedSortFields: STAFF_ALLOWED_SORT_FIELDS,
+      defaultSortBy: 'createdAt',
+      defaultSortOrder: 'desc',
+    });
 
     const [total, data] = await Promise.all([
       this.prisma.staffUser.count({ where }),
       this.prisma.staffUser.findMany({
         where,
         skip,
-        take: limit,
-        orderBy: { createdAt: 'desc' },
+        take,
+        orderBy,
         select: {
           id: true,
           email: true,
@@ -90,15 +100,7 @@ export class UsersService {
       }),
     ]);
 
-    return {
-      data,
-      meta: {
-        total,
-        page,
-        limit,
-        totalPages: Math.ceil(total / limit),
-      },
-    };
+    return createPaginatedResponse(data, total, page, limit);
   }
 
   async findOne(id: string) {

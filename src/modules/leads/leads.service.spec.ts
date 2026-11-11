@@ -36,4 +36,58 @@ describe('LeadsService', () => {
   it('should be defined', () => {
     expect(service).toBeDefined();
   });
+
+  it('should support reusable search, filtering, sorting, and pagination in findAll', async () => {
+    mockPrismaService.lead.count.mockResolvedValue(25);
+    mockPrismaService.lead.findMany.mockResolvedValue([
+      { id: 'lead-1', customerName: 'Tanvir Ahmed', stage: 'QUALIFIED' },
+    ]);
+
+    const result = await service.findAll(
+      {
+        page: 2,
+        limit: 10,
+        search: 'Cox',
+        stage: 'QUALIFIED' as any,
+        source: 'WHATSAPP' as any,
+        minBudget: 10000,
+        maxBudget: 50000,
+        sortBy: 'budget',
+        sortOrder: 'asc',
+      },
+      {
+        id: 'staff-1',
+        email: 'admin@travelpilot.internal',
+        name: 'Admin',
+        role: 'OWNER_ADMIN' as any,
+        status: 'ACTIVE' as any,
+      },
+    );
+
+    expect(mockPrismaService.lead.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        skip: 10,
+        take: 10,
+        orderBy: { budget: 'asc' },
+        where: expect.objectContaining({
+          stage: 'QUALIFIED',
+          source: 'WHATSAPP',
+          budget: { gte: 10000, lte: 50000 },
+          OR: expect.arrayContaining([
+            { customerName: { contains: 'Cox', mode: 'insensitive' } },
+            { destination: { contains: 'Cox', mode: 'insensitive' } },
+          ]),
+        }),
+      }),
+    );
+
+    expect(result.meta).toEqual({
+      total: 25,
+      page: 2,
+      limit: 10,
+      totalPages: 3,
+      hasNextPage: true,
+      hasPrevPage: true,
+    });
+  });
 });

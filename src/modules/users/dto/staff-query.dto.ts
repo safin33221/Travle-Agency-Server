@@ -1,24 +1,18 @@
-import { IsEnum, IsInt, IsOptional, Max, Min } from 'class-validator';
-import { Type } from 'class-transformer';
+import { IsEnum, IsOptional } from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { StaffRole, StaffStatus } from '../../../generated/prisma/client.js';
+import { PaginationQueryDto } from '../../../common/dto/pagination-query.dto.js';
 
-export class StaffQueryDto {
-  @ApiPropertyOptional({ default: 1 })
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  @IsOptional()
-  page: number = 1;
+export const STAFF_SEARCHABLE_FIELDS = ['name', 'email'];
+export const STAFF_ALLOWED_SORT_FIELDS = [
+  'createdAt',
+  'updatedAt',
+  'name',
+  'email',
+  'lastLoginAt',
+];
 
-  @ApiPropertyOptional({ default: 20 })
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  @Max(100)
-  @IsOptional()
-  limit: number = 20;
-
+export class StaffQueryDto extends PaginationQueryDto {
   @ApiPropertyOptional({ enum: StaffRole })
   @IsEnum(StaffRole)
   @IsOptional()
@@ -29,4 +23,3 @@ export class StaffQueryDto {
   @IsOptional()
   status?: StaffStatus;
 }
-
