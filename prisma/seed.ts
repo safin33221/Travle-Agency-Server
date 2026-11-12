@@ -3,10 +3,14 @@ import bcrypt from 'bcrypt';
 import pg from 'pg';
 import { PrismaPg } from '@prisma/adapter-pg';
 import {
+  AgencyServiceStatus,
+  CountryCoverageStatus,
   PrismaClient,
   ServiceCategory,
   StaffRole,
   StaffStatus,
+  VisaCategory,
+  VisaPublicationStatus,
 } from '../src/generated/prisma/client.js';
 import {
   DEFAULT_SECTOR_DOCUMENTS,
@@ -378,6 +382,186 @@ async function seed() {
         },
       });
       console.log('Created sample Work Permit lead with trackingCode: WP-102938');
+    }
+
+    // 6. Seed Fictional Visa & Immigration Example Countries & Services (Development Sample Only)
+    const countryCount = await prisma.country.count();
+    if (countryCount === 0) {
+      const countryA = await prisma.country.create({
+        data: {
+          name: 'Example Destination A',
+          isoCode: 'EXA',
+          slug: 'example-destination-a',
+          flagEmoji: '🏳️',
+          shortIntro:
+            'Example content for development only. Sample destination showcasing multi-service visa assistance.',
+          detailedDescription:
+            'This is a clearly labeled fictional destination country for development and testing. It demonstrates how the agency manages multiple visa service offerings per destination.',
+          coverageStatus: CountryCoverageStatus.ACTIVE,
+          isFeatured: true,
+          displayOrder: 1,
+          seoTitle: 'Example Destination A — Visa Assistance (Sample)',
+          seoDescription: 'Fictional sample destination for development testing.',
+        },
+      });
+
+      await prisma.visaService.create({
+        data: {
+          countryId: countryA.id,
+          category: VisaCategory.STUDENT_VISA,
+          title: 'Student Visa Assistance',
+          slug: 'student-visa-assistance',
+          shortDescription: 'Example content for development only',
+          fullDescription:
+            'Example content for development only. Demonstrates agency consultation, academic document checklist verification, and student visa filing assistance.',
+          eligibilityInfo:
+            'Sample eligibility guidance for development only: Valid admission offer letter and verified financial documentation.',
+          applicationProcessSteps: [
+            'Step 1: Initial consultation and academic profile review (Sample)',
+            'Step 2: Document checklist verification (Sample)',
+            'Step 3: Application submission guidance (Sample)',
+          ],
+          estimatedProcessingTime: '4 to 6 Weeks (Sample Estimate)',
+          agencyServiceFee: 15000,
+          governmentFeeInfo:
+            'Official embassy fees are paid directly to the authority (Sample guidance).',
+          currency: 'BDT',
+          importantNotes:
+            'Sample development notice: Agency service availability does not guarantee visa approval.',
+          disclaimer:
+            'Information is provided for general guidance. Visa requirements and decisions are determined by the relevant authorities and may change.',
+          informationSourceUrl: 'https://example.org/sample-immigration-source',
+          lastVerifiedAt: new Date(),
+          displayOrder: 1,
+          isFeatured: true,
+          publicationStatus: VisaPublicationStatus.PUBLISHED,
+          serviceStatus: AgencyServiceStatus.ACCEPTING_INQUIRIES,
+          requirements: {
+            create: [
+              {
+                title: 'Valid Passport (Sample Requirement)',
+                description: 'Minimum 12 months validity recommended.',
+                isMandatory: true,
+                displayOrder: 1,
+              },
+              {
+                title: 'Academic Transcripts & Certificates (Sample)',
+                description: 'Verified copies of previous academic records.',
+                isMandatory: true,
+                displayOrder: 2,
+              },
+              {
+                title: 'Financial Solvency Statement (Sample)',
+                description: 'Bank statement as required by the authority.',
+                isMandatory: true,
+                displayOrder: 3,
+              },
+            ],
+          },
+        },
+      });
+
+      await prisma.visaService.create({
+        data: {
+          countryId: countryA.id,
+          category: VisaCategory.WORK_PERMIT,
+          title: 'Work Permit Assistance',
+          slug: 'work-permit-assistance',
+          shortDescription: 'Example content for development only',
+          fullDescription:
+            'Example content for development only. Demonstrates how a temporarily paused work permit assistance service is displayed publicly without accepting new inquiries.',
+          eligibilityInfo:
+            'Sample eligibility guidance for development only: Verified employer sponsor permit required.',
+          applicationProcessSteps: [
+            'Step 1: Employer permit verification (Sample)',
+            'Step 2: Medical and police clearance checklist (Sample)',
+          ],
+          estimatedProcessingTime: 'TBD (Sample)',
+          agencyServiceFee: 25000,
+          currency: 'BDT',
+          disclaimer:
+            'Information is provided for general guidance. Visa requirements and decisions are determined by the relevant authorities and may change.',
+          lastVerifiedAt: new Date(),
+          displayOrder: 2,
+          isFeatured: false,
+          publicationStatus: VisaPublicationStatus.PUBLISHED,
+          serviceStatus: AgencyServiceStatus.TEMPORARILY_PAUSED,
+          requirements: {
+            create: [
+              {
+                title: 'Valid Passport (Sample Requirement)',
+                isMandatory: true,
+                displayOrder: 1,
+              },
+              {
+                title: 'Police Clearance Certificate (Sample)',
+                isMandatory: true,
+                displayOrder: 2,
+              },
+            ],
+          },
+        },
+      });
+
+      const countryB = await prisma.country.create({
+        data: {
+          name: 'Example Destination B',
+          isoCode: 'EXB',
+          slug: 'example-destination-b',
+          flagEmoji: '🏳️',
+          shortIntro:
+            'Example content for development only. Sample tourist visa destination.',
+          detailedDescription:
+            'Fictional sample destination B for development and testing of tourist visa assistance.',
+          coverageStatus: CountryCoverageStatus.ACTIVE,
+          isFeatured: true,
+          displayOrder: 2,
+        },
+      });
+
+      await prisma.visaService.create({
+        data: {
+          countryId: countryB.id,
+          category: VisaCategory.TOURIST_VISA,
+          title: 'Tourist Visa Assistance',
+          slug: 'tourist-visa-assistance',
+          shortDescription: 'Example content for development only',
+          fullDescription:
+            'Example content for development only. Demonstrates tourist visa checklist preparation and itinerary documentation support.',
+          applicationProcessSteps: [
+            'Step 1: Checklist review & form preparation (Sample)',
+            'Step 2: Visa submission guidance (Sample)',
+          ],
+          estimatedProcessingTime: '7 to 14 Working Days (Sample Estimate)',
+          agencyServiceFee: 5000,
+          currency: 'BDT',
+          disclaimer:
+            'Information is provided for general guidance. Visa requirements and decisions are determined by the relevant authorities and may change.',
+          lastVerifiedAt: new Date(),
+          displayOrder: 1,
+          isFeatured: true,
+          publicationStatus: VisaPublicationStatus.PUBLISHED,
+          serviceStatus: AgencyServiceStatus.ACCEPTING_INQUIRIES,
+          requirements: {
+            create: [
+              {
+                title: 'Passport Copy (Minimum 6 Months Validity - Sample)',
+                isMandatory: true,
+                displayOrder: 1,
+              },
+              {
+                title: 'Recent Photograph & Bank Statement (Sample)',
+                isMandatory: true,
+                displayOrder: 2,
+              },
+            ],
+          },
+        },
+      });
+
+      console.log(
+        'Seeded fictional Visa & Immigration sample countries (Example Destination A & B).',
+      );
     }
 
     console.log('Seeding complete.');

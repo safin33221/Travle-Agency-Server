@@ -280,6 +280,18 @@ FollowUpStatus:  OPEN | DONE | CANCELLED
 | `POST` | `/quotations/:id/approve` | Authorized explicit approval |
 | `GET` | `/quotations/:id/pdf` | Authorized PDF for approved revision |
 | `GET` | `/dashboard/summary` | Real MVP operational counts |
+| `GET` | `/countries` | Public active destination countries |
+| `GET` | `/countries/:slug` | Public country detail & published visa services |
+| `GET` | `/visa-services` | Public published visa service catalog |
+| `GET` | `/visa-services/:countrySlug/:serviceSlug` | Public visa service detail & requirements |
+| `POST` | `/visa-inquiries` | Public visa inquiry linked to Lead CRM |
+| `GET` | `/admin/visa-overview` | Visa & Immigration overview counts |
+| `GET`, `POST` | `/admin/countries` | Admin country list/create |
+| `GET`, `PATCH`, `DELETE` | `/admin/countries/:id` | Admin country detail/update/soft-archive |
+| `GET`, `POST` | `/admin/visa-services` | Admin visa service list/create |
+| `GET`, `PATCH`, `DELETE` | `/admin/visa-services/:id` | Admin visa service detail/update/soft-archive |
+| `GET` | `/admin/visa-inquiries` | Admin visa inquiries list |
+| `GET` | `/admin/visa-inquiries/:id` | Admin visa inquiry detail |
 
 Routes are **proposals**, not a claim of an already implemented API. Document and approve changes before frontend integration.
 

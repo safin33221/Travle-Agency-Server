@@ -65,6 +65,9 @@ async function bootstrap() {
     .addTag('AI', 'Grounded AI advisory assistant for draft responses')
     .addTag('Dashboard', 'Operational metrics and lead funnel analytics')
     .addTag('Audit', 'Audit trail for sensitive actions')
+    .addTag('Countries', 'Destination country management for Visa & Immigration')
+    .addTag('Visa Services', 'Visa & Immigration service offerings and requirements')
+    .addTag('Visa Inquiries', 'Public visa consultation inquiries linked to Lead CRM')
     .addCookieAuth('access_token')
     .addBearerAuth()
     .build();

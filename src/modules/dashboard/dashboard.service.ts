@@ -23,6 +23,7 @@ export class DashboardService {
       openFollowUps,
       overdueFollowUps,
       wonRevenueRaw,
+      upcomingTasks,
     ] = await Promise.all([
       this.prisma.lead.count({ where: { stage: LeadStage.NEW } }),
       this.prisma.lead.count({ where: { stage: LeadStage.QUALIFIED } }),
@@ -50,6 +51,28 @@ export class DashboardService {
           grandTotal: true,
         },
       }),
+      this.prisma.followUpTask.findMany({
+        where: { status: FollowUpStatus.OPEN },
+        orderBy: { dueAt: 'asc' },
+        take: 5,
+        include: {
+          lead: {
+            select: {
+              id: true,
+              customerName: true,
+              customerPhone: true,
+              stage: true,
+            },
+          },
+          assignedTo: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+            },
+          },
+        },
+      }),
     ]);
 
     return {
@@ -65,6 +88,9 @@ export class DashboardService {
         },
       },
       quotations: {
+        total: draftQuotes + approvedQuotes,
+        draft: draftQuotes,
+        approved: approvedQuotes,
         draftCount: draftQuotes,
         approvedCount: approvedQuotes,
         wonRevenue: Number(wonRevenueRaw._sum.grandTotal || 0),
@@ -72,6 +98,7 @@ export class DashboardService {
       followUps: {
         openCount: openFollowUps,
         overdueCount: overdueFollowUps,
+        upcomingTasks: upcomingTasks ?? [],
       },
       packages: {
         activeCount: activePackages,

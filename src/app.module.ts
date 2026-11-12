@@ -13,6 +13,9 @@ import { QuotationsModule } from './modules/quotations/quotations.module.js';
 import { AiModule } from './modules/ai/ai.module.js';
 import { DashboardModule } from './modules/dashboard/dashboard.module.js';
 import { AuditModule } from './modules/audit/audit.module.js';
+import { CountriesModule } from './modules/countries/countries.module.js';
+import { VisaServicesModule } from './modules/visa-services/visa-services.module.js';
+import { VisaInquiriesModule } from './modules/visa-inquiries/visa-inquiries.module.js';
 import { appConfig } from './config/env.config.js';
 import { validate } from './config/env.validation.js';
 
@@ -34,6 +37,9 @@ import { validate } from './config/env.validation.js';
     AiModule,
     DashboardModule,
     AuditModule,
+    CountriesModule,
+    VisaServicesModule,
+    VisaInquiriesModule,
   ],
   controllers: [AppController],
   providers: [AppService],

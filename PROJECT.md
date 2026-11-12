@@ -266,6 +266,18 @@ API prefix: `/api/v1`. The backend will publish canonical OpenAPI before the fro
 | `POST` | `/quotations/:id/approve` | Authorized approval |
 | `GET` | `/quotations/:id/pdf` | Authorized PDF export |
 | `GET` | `/dashboard/summary` | Aggregate MVP counts |
+| `GET` | `/countries` | Public active destination countries |
+| `GET` | `/countries/:slug` | Public country detail & published visa services |
+| `GET` | `/visa-services` | Public published visa service offerings |
+| `GET` | `/visa-services/:countrySlug/:serviceSlug` | Public visa service detail, requirements & disclaimer |
+| `POST` | `/visa-inquiries` | Public visa inquiry submission linked to CRM `Lead` |
+| `GET` | `/admin/visa-overview` | Visa & Immigration admin summary metrics |
+| `GET/POST` | `/admin/countries` | Admin list/create destination countries |
+| `GET/PATCH/DELETE` | `/admin/countries/:id` | Admin get/update/soft-archive country |
+| `GET/POST` | `/admin/visa-services` | Admin list/create visa service offerings |
+| `GET/PATCH/DELETE` | `/admin/visa-services/:id` | Admin get/update/soft-archive visa service |
+| `GET` | `/admin/visa-inquiries` | Admin list visa inquiries linked to CRM |
+| `GET` | `/admin/visa-inquiries/:id` | Admin visa inquiry detail |
 
 Notes:
 - Routes are **proposed**, not approved production contracts; align with OpenAPI during implementation.
@@ -388,6 +400,7 @@ V1–V3 dates and budgets must be estimated **after** MVP findings. Do not promi
 | 2026-11-11 | Product is for one travel-agency client; **not SaaS** | Confirmed by project owner |
 | 2026-11-11 | Use separate frontend/backend repos with identical shared `PROJECT.md` | Confirmed by project owner |
 | 2026-11-11 | MVP first, then independently approved V1/V2/V3 | Confirmed by project owner |
+| 2026-11-13 | Approved Visa & Immigration Services Management (Module MVP: Country CRUD, Visa Service CRUD, Publication vs. Availability controls, Public `/visa-services` routes, and CRM-linked `VisaInquiry`) | Confirmed by project owner |
 | TBD | Agency identity, commercial terms, production stack/provider selections | Pending client discovery |
 
 ## 16. Definition of Done

@@ -67,6 +67,35 @@ enum AiDraftReviewStatus {
   DISCARDED
 }
 
+enum CountryCoverageStatus {
+  ACTIVE
+  LIMITED
+  PAUSED
+  ARCHIVED
+}
+
+enum VisaCategory {
+  WORK_VISA
+  WORK_PERMIT
+  STUDENT_VISA
+  TOURIST_VISA
+  BUSINESS_VISA
+  OTHER
+}
+
+enum VisaPublicationStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum AgencyServiceStatus {
+  ACCEPTING_INQUIRIES
+  LIMITED
+  TEMPORARILY_PAUSED
+  NOT_OFFERED
+}
+
 model StaffUser {
   id               String       @id @default(uuid())
   email            String       @unique
@@ -79,14 +108,16 @@ model StaffUser {
   createdAt        DateTime     @default(now())
   updatedAt        DateTime     @updatedAt
 
-  assignedLeads     Lead[]          @relation("AssignedLeads")
-  leadNotes         LeadNote[]
-  followUpTasks     FollowUpTask[]
-  createdQuotes     Quotation[]     @relation("CreatedQuotes")
-  approvedQuotes    Quotation[]     @relation("ApprovedQuotes")
-  sharedQuotes      Quotation[]     @relation("SharedQuotes")
-  aiDrafts          AiDraft[]
-  auditLogs         AuditLog[]
+  assignedLeads       Lead[]          @relation("AssignedLeads")
+  leadNotes           LeadNote[]
+  followUpTasks       FollowUpTask[]
+  createdQuotes       Quotation[]     @relation("CreatedQuotes")
+  approvedQuotes      Quotation[]     @relation("ApprovedQuotes")
+  sharedQuotes        Quotation[]     @relation("SharedQuotes")
+  aiDrafts            AiDraft[]
+  auditLogs           AuditLog[]
+  createdVisaServices VisaService[]   @relation("CreatedVisaServices")
+  updatedVisaServices VisaService[]   @relation("UpdatedVisaServices")
 
   @@index([role, status])
   @@map("staff_users")
@@ -165,6 +196,7 @@ model Lead {
   followUpTasks FollowUpTask[]
   quotations    Quotation[]
   aiDrafts      AiDraft[]
+  visaInquiries VisaInquiry[]
 
   @@index([trackingCode])
   @@index([category, stage, assignedToId])
@@ -291,4 +323,111 @@ model AuditLog {
   @@index([entityType, entityId])
   @@index([createdAt])
   @@map("audit_logs")
+}
+
+model Country {
+  id                  String                @id @default(uuid())
+  name                String                @unique
+  isoCode             String                @unique @db.VarChar(3)
+  slug                String                @unique
+  flagEmoji           String?               @db.VarChar(16)
+  flagUrl             String?
+  coverImageUrl       String?
+  shortIntro          String                @db.Text
+  detailedDescription String?               @db.Text
+  coverageStatus      CountryCoverageStatus @default(ACTIVE)
+  isFeatured          Boolean               @default(false)
+  displayOrder        Int                   @default(0)
+  seoTitle            String?
+  seoDescription      String?               @db.Text
+  createdAt           DateTime              @default(now())
+  updatedAt           DateTime              @updatedAt
+
+  visaServices  VisaService[]
+  visaInquiries VisaInquiry[]
+
+  @@index([coverageStatus, isFeatured, displayOrder])
+  @@map("countries")
+}
+
+model VisaService {
+  id                      String                @id @default(uuid())
+  countryId               String
+  country                 Country               @relation(fields: [countryId], references: [id], onDelete: Restrict)
+  category                VisaCategory
+  customCategoryLabel     String?
+  title                   String
+  slug                    String
+  shortDescription        String                @db.Text
+  fullDescription         String                @db.Text
+  eligibilityInfo         String?               @db.Text
+  applicationProcessSteps String[]              @default([])
+  estimatedProcessingTime String?
+  agencyServiceFee        Decimal?              @db.Decimal(12, 2)
+  governmentFeeInfo       String?               @db.Text
+  currency                String                @default("BDT")
+  importantNotes          String?               @db.Text
+  disclaimer              String                @default("Information is provided for general guidance. Visa requirements and decisions are determined by the relevant authorities and may change.") @db.Text
+  informationSourceUrl    String?
+  lastVerifiedAt          DateTime?
+  displayOrder            Int                   @default(0)
+  isFeatured              Boolean               @default(false)
+  publicationStatus       VisaPublicationStatus @default(DRAFT)
+  serviceStatus           AgencyServiceStatus   @default(ACCEPTING_INQUIRIES)
+  seoTitle                String?
+  seoDescription          String?               @db.Text
+  createdById             String?
+  createdBy               StaffUser?            @relation("CreatedVisaServices", fields: [createdById], references: [id], onDelete: SetNull)
+  updatedById             String?
+  updatedBy               StaffUser?            @relation("UpdatedVisaServices", fields: [updatedById], references: [id], onDelete: SetNull)
+  createdAt               DateTime              @default(now())
+  updatedAt               DateTime              @updatedAt
+
+  requirements VisaServiceRequirement[]
+  inquiries    VisaInquiry[]
+
+  @@unique([countryId, slug])
+  @@index([countryId, publicationStatus, serviceStatus])
+  @@index([category, publicationStatus, isFeatured])
+  @@map("visa_services")
+}
+
+model VisaServiceRequirement {
+  id            String      @id @default(uuid())
+  visaServiceId String
+  visaService   VisaService @relation(fields: [visaServiceId], references: [id], onDelete: Cascade)
+  title         String
+  description   String?     @db.Text
+  isMandatory   Boolean     @default(true)
+  displayOrder  Int         @default(0)
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  @@index([visaServiceId, displayOrder])
+  @@map("visa_service_requirements")
+}
+
+model VisaInquiry {
+  id            String       @id @default(uuid())
+  leadId        String
+  lead          Lead         @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  countryId     String
+  country       Country      @relation(fields: [countryId], references: [id], onDelete: Restrict)
+  visaServiceId String?
+  visaService   VisaService? @relation(fields: [visaServiceId], references: [id], onDelete: SetNull)
+  category      VisaCategory
+  fullName      String
+  phone         String
+  email         String?
+  message       String?      @db.Text
+  consentGiven  Boolean      @default(true)
+  source        LeadSource   @default(WEBSITE)
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  @@index([leadId])
+  @@index([countryId, category])
+  @@index([visaServiceId])
+  @@index([createdAt])
+  @@map("visa_inquiries")
 }
